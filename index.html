@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Simon Game</title>
+  <meta name="description" content="Simon Game for Free Code Camp">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Place favicon.ico in the root directory -->
+
+  <link rel="stylesheet" href="css/normalize.css">
+  <link href="https://fonts.googleapis.com/css?family=Squada+One" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+  <!--[if lte IE 9]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
+  <![endif]-->
+
+  <!-- Add your site or application content here -->
+  <div id="main-container">
+  <!-- Wow it works great! -->
+    <div id="game-container">
+
+      <div class="row">
+        <div class="pad p-1" id="p-1"></div>
+        <div class="pad p-2" id="p-2"></div>
+      </div>
+
+      <div class="row">
+        <div class="pad p-3" id="p-3"></div>
+        <div class="pad p-4" id="p-4"></div>
+      </div>
+
+      <div class="center">
+
+        <div id="cover">
+          <h1>SIMON</h1>
+        </div>
+
+        <div id="top-controls">
+
+          <div id="display">
+            <h1 id="led" class="on-top">--</h1>
+            <h3>Count</h3>
+          </div>
+
+          <div id="start">
+            <div class="button on-top"></div>
+            <h3>Start</h3>
+          </div>
+
+          <div id="strict">
+            <div class="button on-top"></div>
+            <h3>Strict</h3>
+          </div>
+
+        </div>
+
+        <div id="bottom-controls">
+          <h3>Off</h3>
+          <div class="on-switch on-top can-click">
+            <div class="switch"></div>
+          </div>
+          <h3>On</h3>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="js/webAudioClass.js"></script>
+  <script src="js/simon.js"></script>
+  <script>
+    document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] +
+      ':35729/livereload.js?snipver=1"></' + 'script>')
+
+  </script>
+</body>
+
+</html>
