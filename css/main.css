@@ -110,7 +110,8 @@ body {
       width: 20px;
       background: grey;
       border-radius: 50%;
-      border: 2px solid darkslategrey; }
+      border: 2px solid darkslategrey;
+      }
     .center #top-controls #start > div {
       background: red; }
     .center #top-controls #strict > div {

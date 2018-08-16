@@ -218,6 +218,8 @@ const simon = {
     }
 
     // I could just use the call method instead of binding here
+    // Which I think will be a little bit less confusing
+  
     let add = addRandom.bind(this);
     let pattern = playPattern.bind(this);
 
@@ -286,8 +288,9 @@ const simon = {
 
   noInputRepeat: function() {
     function playOnAFK() {
+      console.log('Player input length: ' + this.playerInput.length);
+      console.log('Player pattern length: ' + this.pattern.length);
       if (this.playerInput.length === 0) {
-        console.log('Player input: ' + this.playerInput);
         // Turn off pad clicks
         this.pads.forEach(el => el.classList.remove('can-click'));
         this.events.unbind.pads.call(this);
