@@ -11,6 +11,16 @@
     - Add css class to lighten color on click event instead of hover
     - Final touches to CSS
   ************************
+  
+  ------------------------
+  Color Themes I'm Liking:
+  ------------------------
+    - Mintchoc
+    - Soup
+    - Joker
+    - Heroku
+    - Friction
+    - Absent
 */
 
 const simon = {
@@ -19,20 +29,21 @@ const simon = {
   frequencies: [165, 220, 277, 330, 100],
   pattern: [],
   playerInput: [],
-  gameOver: false,
   currentPad: null,
 
   init: function() {
     this.note = new Sound(this.audioCtx);
     this.cacheDom();
     this.events.bind.onSwitch.call(this);
+    console.log('Game Loaded!');
+    console.log('You can switch it on.');
   },
 
   cacheDom: function() {
     this.dom = document;
     this.center = this.dom.querySelector('.center');
     this.pads = this.dom.querySelectorAll('.pad');
-    this.displayCount = this.dom.querySelector('#led');
+    this.displayCount = this.dom.querySelector('#led > h1');
     this.onSwitch = this.dom.querySelector('.on-switch');
     this.switch = this.dom.querySelector('.switch');
     this.startButton = this.dom.querySelector('#start > .button');
@@ -41,9 +52,9 @@ const simon = {
 
   renderCount: function() {
     if (this.pattern.length > 0) {
-      this.displayCount.innerHTML = this.pattern.length;
+      this.displayCount.textContent = this.pattern.length;
     } else {
-      this.displayCount.innerHTML = '--';
+      this.displayCount.textContent = '--';
     }
   },
 
@@ -88,28 +99,43 @@ const simon = {
       this.playerInput.push(padNum);
       this.padLightOn(padNum);
 
+      // Correct pad choice
       if (this.playerInput[this.playerInput.length - 1] === this.pattern[this.playerInput.length - 1]) {
         console.log('good choice!');
         this.play(padNum);
+
+        // Cancle repeat timetout and start it again on mousedown
+        this.stopRepeat();
+        this.afkRepeatPattern();
+
+        // Wrong pad choice
       } else {
         console.log('you messed up the pattern! >:(');
-        this.gameOver = true;
         this.play(4);
 
         // Turn off pad clicks
         this.pads.forEach(el => el.classList.remove('can-click'));
         this.events.unbind.pads.call(this);
 
+        this.failMessage();
         setTimeout(this.stop.bind(this), 1000);
         setTimeout(this.padLightOff.bind(this, padNum), 1000);
+        return;
       }
     }
 
     // This codeblock needs to be cleaned up / refactored a little
-    if (event.type === 'mouseup' && this.gameOver === false) {
+    if (event.type === 'mouseup') {
 
-      console.log(this.currentPad);
-      this.padLightOff(this.currentPad);
+      // console.log(this.currentPad);
+
+      // This might be a little sloppy/hacky way to do this
+      // The conditional is to prevent error that happens
+      // when mouseup event occurs but this.currentPad remains null
+      // i.e. when game is started then turned off but user never clicks a pad
+      if (this.currentPad !== null) {
+        this.padLightOff(this.currentPad);
+      }
 
       if (this.note.gainNode) {
         this.stop();
@@ -122,6 +148,7 @@ const simon = {
         this.pads.forEach(el => el.classList.remove('can-click'));
         this.events.unbind.pads.call(this);
 
+        // Plays the pattern and true makes it add to end of the pattern
         setTimeout(this.makePattern.bind(this, true), 500);
       }
     }
@@ -184,14 +211,16 @@ const simon = {
         // Gives user control to click pads
         this.pads.forEach(el => el.classList.add('can-click'));
         this.events.bind.pads.call(this);
-        this.noInputRepeat();
+        this.afkRepeatPattern();
       }, 300);
     }
 
     // Plays current pattern then adds a new pad input, calls add()
     function playPattern() {
+
       let i = 0;
       this.playerInput = [];
+
       let interval = setInterval(() => {
         this.play(this.pattern[i]);
         this.padLightOn(this.pattern[i]);
@@ -208,6 +237,7 @@ const simon = {
               // Gives user control to click pads (Might need to refactor into a function so I'm not repeating myself)
               this.pads.forEach(el => el.classList.add('can-click'));
               this.events.bind.pads.call(this);
+              this.afkRepeatPattern();
             }
           } else {
             i++;
@@ -219,7 +249,7 @@ const simon = {
 
     // I could just use the call method instead of binding here
     // Which I think will be a little bit less confusing
-  
+
     let add = addRandom.bind(this);
     let pattern = playPattern.bind(this);
 
@@ -238,8 +268,8 @@ const simon = {
   reset: function() {
     this.pattern = [];
     this.playerInput = [];
-    this.gameOver = false;
     this.renderCount();
+    this.stopRepeat();
   },
 
   toggleOnOff: function() {
@@ -286,33 +316,51 @@ const simon = {
     console.log('i\'ll be strict someday');
   },
 
-  noInputRepeat: function() {
-    function playOnAFK() {
-      console.log('Player input length: ' + this.playerInput.length);
-      console.log('Player pattern length: ' + this.pattern.length);
-      if (this.playerInput.length === 0) {
-        // Turn off pad clicks
-        this.pads.forEach(el => el.classList.remove('can-click'));
-        this.events.unbind.pads.call(this);
-        this.makePattern();
-      }
+  failMessage: function() {
+
+    function endBlink() {
+      this.displayCount.classList.remove('blink');
+      this.renderCount();
     }
-    setTimeout(playOnAFK.bind(this), 2000);
+
+    console.log('You have chosen, poorly.');
+    this.displayCount.classList.add('blink');
+    this.displayCount.textContent = '☠';
+    setTimeout(endBlink.bind(this), 2000);
+  },
+
+  afkRepeatPattern: function() {
+
+    function playOnAFK() {
+      this.pads.forEach(el => el.classList.remove('can-click'));
+      this.events.unbind.pads.call(this);
+      this.makePattern();
+    }
+
+    if (this.pattern.length !== this.playerInput.length) {
+      this.afkTimer = setTimeout(playOnAFK.bind(this), 3000);
+    }
+  },
+
+  stopRepeat: function() {
+    clearTimeout(this.afkTimer);
   }
 };
 
-simon.init();
+window.onload = function() {
+  if (this.document.readyState === 'complete') {
+    simon.init();
+  }
+};
 
-// Max and Min are inclusive
-// function randomInt(min, max) {
-//   min = Math.ceil(min);
-//   max = Math.floor(max);
-//   return Math.floor(Math.random() * (max - min + 1) + min);
-// }
-
-// function sameAsPattern(padClicked) {
-//   return padClicked === simon.pattern[simon.pattern.length - 1];
-// }
-
-// Make pads clickable.
-// this.pads.forEach(el => el.classList.add('can-click'));
+// I may be able to stop the game on tabchange and restart it on focus
+// to get rid of that bug where the game does not stop the first note 
+// played when tab is not focused.
+document.onvisibilitychange = function() {
+  console.log(document.visibilityState);
+  if (document.hidden) {
+    console.log('Changed tabs at: ' + new Date().toLocaleTimeString());
+  } else {
+    console.log('Tab selected at: ' + new Date().toLocaleTimeString());
+  }
+};
