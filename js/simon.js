@@ -49,7 +49,7 @@ const simon = {
     this.startButton = this.dom.querySelector('#start > .button');
     this.strictButton = this.dom.querySelector('#strict > .button');
   },
-
+  
   renderCount: function() {
     if (this.pattern.length > 0) {
       this.displayCount.textContent = this.pattern.length;
@@ -203,10 +203,10 @@ const simon = {
       this.pattern.push(randomPad);
       this.renderCount();
       this.play(randomPad);
-      this.pads[randomPad].classList.add(`p-${randomPad + 1}-active`);
+      this.padLightOn(randomPad);
       setTimeout(() => {
         this.stop();
-        this.pads[randomPad].classList.remove(`p-${randomPad + 1}-active`);
+        this.padLightOff(randomPad);
 
         // Gives user control to click pads
         this.pads.forEach(el => el.classList.add('can-click'));
@@ -221,7 +221,7 @@ const simon = {
       let i = 0;
       this.playerInput = [];
 
-      let interval = setInterval(() => {
+      this.playPatternInterval = setInterval(() => {
         this.play(this.pattern[i]);
         this.padLightOn(this.pattern[i]);
 
@@ -230,7 +230,7 @@ const simon = {
           this.padLightOff(this.pattern[i]);
 
           if (i === this.pattern.length - 1) {
-            clearInterval(interval);
+            clearInterval(this.playPatternInterval);
             if (appendToPattern === true) {
               setTimeout(add, 200);
             } else {
@@ -266,10 +266,13 @@ const simon = {
   },
 
   reset: function() {
+    this.stopRepeat();
+    this.stopPlayPattern();
     this.pattern = [];
     this.playerInput = [];
+    this.events.unbind.pads.call(this);
+    this.pads.forEach(el => el.classList.remove('can-click'));
     this.renderCount();
-    this.stopRepeat();
   },
 
   toggleOnOff: function() {
@@ -296,8 +299,8 @@ const simon = {
       setTimeout(removeShine.bind(this), 1200);
     } else {
       this.events.unbind.buttons.call(this);
-      this.events.unbind.pads.call(this);
-      this.pads.forEach(el => el.classList.remove('can-click'));
+      // this.events.unbind.pads.call(this);
+      // this.pads.forEach(el => el.classList.remove('can-click'));
       this.switch.style.float = '';
       this.displayCount.style.color = '';
       this.startButton.classList.remove('can-click');
@@ -307,9 +310,16 @@ const simon = {
   },
 
   startGame: function() {
+    // console.log(this.playPatternInterval);
+    // console.log(this.pattern.length);
+    this.reset();
     this.makePattern();
-    // this.pads.forEach(el => el.classList.add('can-click'));
-    // this.events.bind.pads.call(this);
+    // setTimeout(function() {
+    //   console.log(this);
+    //   simon.pattern = [];
+    //   simon.playerInput = [];  
+    //   simon.makePattern.call(simon);
+    // }, 500);
   },
 
   toggleStrict: function() {
@@ -340,6 +350,10 @@ const simon = {
     if (this.pattern.length !== this.playerInput.length) {
       this.afkTimer = setTimeout(playOnAFK.bind(this), 3000);
     }
+  },
+
+  stopPlayPattern: function() {
+    clearTimeout(this.playPatternInterval);
   },
 
   stopRepeat: function() {

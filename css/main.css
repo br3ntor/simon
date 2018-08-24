@@ -176,7 +176,7 @@ body {
   cursor: pointer; }
 
 .blink {
-  font-size: 40px;
+  font-size: 36px;
   animation: blinker 1s linear infinite; }
 
 @keyframes blinker {
