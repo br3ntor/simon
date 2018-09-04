@@ -49,7 +49,7 @@ const simon = {
     this.startButton = this.dom.querySelector('#start > .button');
     this.strictButton = this.dom.querySelector('#strict > .button');
   },
-  
+
   renderCount: function() {
     if (this.pattern.length > 0) {
       this.displayCount.textContent = this.pattern.length;
@@ -114,8 +114,7 @@ const simon = {
         this.play(4);
 
         // Turn off pad clicks
-        this.pads.forEach(el => el.classList.remove('can-click'));
-        this.events.unbind.pads.call(this);
+        this.takePadControl();
 
         this.failMessage();
         setTimeout(this.stop.bind(this), 1000);
@@ -127,13 +126,12 @@ const simon = {
     // This codeblock needs to be cleaned up / refactored a little
     if (event.type === 'mouseup') {
 
-      // console.log(this.currentPad);
-
       // This might be a little sloppy/hacky way to do this
       // The conditional is to prevent error that happens
       // when mouseup event occurs but this.currentPad remains null
       // i.e. when game is started then turned off but user never clicks a pad
       if (this.currentPad !== null) {
+        console.log('pad light off');
         this.padLightOff(this.currentPad);
       }
 
@@ -144,9 +142,8 @@ const simon = {
       if (this.playerInput.length === this.pattern.length) {
         console.log('pattern complete!');
 
-        // Turn off pad clicks
-        this.pads.forEach(el => el.classList.remove('can-click'));
-        this.events.unbind.pads.call(this);
+        // Turn off pad clicks - Think I need to add take button control here
+        this.takePadControl();
 
         // Plays the pattern and true makes it add to end of the pattern
         setTimeout(this.makePattern.bind(this, true), 500);
@@ -209,8 +206,8 @@ const simon = {
         this.padLightOff(randomPad);
 
         // Gives user control to click pads
-        this.pads.forEach(el => el.classList.add('can-click'));
-        this.events.bind.pads.call(this);
+        this.givePadControl();
+
         this.afkRepeatPattern();
       }, 300);
     }
@@ -225,18 +222,20 @@ const simon = {
         this.play(this.pattern[i]);
         this.padLightOn(this.pattern[i]);
 
-        setTimeout(() => {
+        // When I click start button at the same time as last pad in pattern
+        // the start button function runs before this, it tries to clear addTimeout too early so it still plays
+        this.endPatternTimeout = setTimeout(() => {
           this.stop();
           this.padLightOff(this.pattern[i]);
 
           if (i === this.pattern.length - 1) {
             clearInterval(this.playPatternInterval);
             if (appendToPattern === true) {
-              setTimeout(add, 200);
+              console.log(this.currentPad);
+              this.addTimeout = setTimeout(add, 200);
             } else {
-              // Gives user control to click pads (Might need to refactor into a function so I'm not repeating myself)
-              this.pads.forEach(el => el.classList.add('can-click'));
-              this.events.bind.pads.call(this);
+              // Gives user control to click pads (Might need to refactor into a function so I'm not repeating myself)              
+              this.givePadControl();              
               this.afkRepeatPattern();
             }
           } else {
@@ -258,21 +257,27 @@ const simon = {
     } else {
       pattern();
     }
-
-    // This works here but I don't know if I want it here
-    // this.pads.forEach(el => el.classList.add('can-click'));
-    // this.events.bind.pads.call(this);
-
   },
 
   reset: function() {
+
+    // Kills timeouts and intervals
     this.stopRepeat();
-    this.stopPlayPattern();
-    this.pattern = [];
-    this.playerInput = [];
-    this.events.unbind.pads.call(this);
-    this.pads.forEach(el => el.classList.remove('can-click'));
-    this.renderCount();
+    this.stopPlayPattern();    
+
+    // This cuts off sound and turns off lights immediately
+    this.stop();
+    for (let i = 0; i < this.pads.length; i++) {
+      this.padLightOff(i);      
+    }
+
+    // this.padLightOff(this.pattern[i]);
+    // this.currentPad = null;
+    // this.pattern = [];
+    // this.playerInput = [];
+    // this.events.unbind.pads.call(this);
+    // this.pads.forEach(el => el.classList.remove('can-click'));
+    // this.renderCount();
   },
 
   toggleOnOff: function() {
@@ -298,9 +303,8 @@ const simon = {
       // The 1200 is a guess, could be lowered, look in css to find out
       setTimeout(removeShine.bind(this), 1200);
     } else {
+      this.takePadControl();
       this.events.unbind.buttons.call(this);
-      // this.events.unbind.pads.call(this);
-      // this.pads.forEach(el => el.classList.remove('can-click'));
       this.switch.style.float = '';
       this.displayCount.style.color = '';
       this.startButton.classList.remove('can-click');
@@ -310,16 +314,25 @@ const simon = {
   },
 
   startGame: function() {
-    // console.log(this.playPatternInterval);
-    // console.log(this.pattern.length);
+
     this.reset();
-    this.makePattern();
-    // setTimeout(function() {
-    //   console.log(this);
-    //   simon.pattern = [];
-    //   simon.playerInput = [];  
-    //   simon.makePattern.call(simon);
-    // }, 500);
+    this.takePadControl();
+    // this.pattern = [];
+    // this.playerInput = [];
+    // this.renderCount();
+
+
+    let reinit = function() {
+      // console.log(this);
+      // this.currentPad = null;
+      this.pattern = [];
+      this.playerInput = [];
+      this.renderCount();
+      this.makePattern();
+    };
+
+    // this.makePattern();
+    setTimeout(reinit.bind(this), 500);
   },
 
   toggleStrict: function() {
@@ -339,6 +352,7 @@ const simon = {
     setTimeout(endBlink.bind(this), 2000);
   },
 
+  // If no or incomplete user input, this will run
   afkRepeatPattern: function() {
 
     function playOnAFK() {
@@ -353,11 +367,23 @@ const simon = {
   },
 
   stopPlayPattern: function() {
-    clearTimeout(this.playPatternInterval);
+    clearInterval(this.playPatternInterval);
+    clearTimeout(this.endPatternTimeout);
+    clearTimeout(this.addTimeout);
   },
 
   stopRepeat: function() {
     clearTimeout(this.afkTimer);
+  },
+
+  givePadControl: function() {
+    this.pads.forEach(el => el.classList.add('can-click'));
+    this.events.bind.pads.call(this);
+  },
+
+  takePadControl: function() {
+    this.pads.forEach(el => el.classList.remove('can-click'));
+    this.events.unbind.pads.call(this);
   }
 };
 
