@@ -173,7 +173,8 @@ body {
   z-index: 1; }
 
 .can-click {
-  cursor: pointer; }
+  cursor: pointer;
+  pointer-events: auto; }
 
 .blink {
   font-size: 36px;

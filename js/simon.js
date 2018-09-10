@@ -106,7 +106,7 @@ const simon = {
 
         // Cancle repeat timetout and start it again on mousedown
         this.stopRepeat();
-        this.afkRepeatPattern();
+        // this.afkRepeatPattern();
 
         // Wrong pad choice
       } else {
@@ -138,16 +138,18 @@ const simon = {
       if (this.note.gainNode) {
         this.stop();
       }
-
+      
       if (this.playerInput.length === this.pattern.length) {
         console.log('pattern complete!');
-
+        
         // Turn off pad clicks - Think I need to add take button control here
         this.takePadControl();
-
+        
         // Plays the pattern and true makes it add to end of the pattern
         setTimeout(this.makePattern.bind(this, true), 500);
       }
+      
+      this.afkRepeatPattern();
     }
   },
 
@@ -214,7 +216,8 @@ const simon = {
 
     // Plays current pattern then adds a new pad input, calls add()
     function playPattern() {
-
+      let begin_ms = 500;
+      let end_ms = 300;
       let i = 0;
       this.playerInput = [];
 
@@ -231,7 +234,6 @@ const simon = {
           if (i === this.pattern.length - 1) {
             clearInterval(this.playPatternInterval);
             if (appendToPattern === true) {
-              console.log(this.currentPad);
               this.addTimeout = setTimeout(add, 200);
             } else {
               // Gives user control to click pads (Might need to refactor into a function so I'm not repeating myself)              
@@ -241,9 +243,9 @@ const simon = {
           } else {
             i++;
           }
-        }, 300);
+        }, end_ms);
 
-      }, 500);
+      }, begin_ms);
     }
 
     // I could just use the call method instead of binding here
@@ -270,14 +272,6 @@ const simon = {
     for (let i = 0; i < this.pads.length; i++) {
       this.padLightOff(i);      
     }
-
-    // this.padLightOff(this.pattern[i]);
-    // this.currentPad = null;
-    // this.pattern = [];
-    // this.playerInput = [];
-    // this.events.unbind.pads.call(this);
-    // this.pads.forEach(el => el.classList.remove('can-click'));
-    // this.renderCount();
   },
 
   toggleOnOff: function() {
@@ -307,6 +301,7 @@ const simon = {
       this.events.unbind.buttons.call(this);
       this.switch.style.float = '';
       this.displayCount.style.color = '';
+      this.displayCount.textContent = '--';
       this.startButton.classList.remove('can-click');
       this.strictButton.classList.remove('can-click');
       this.reset();
@@ -317,21 +312,15 @@ const simon = {
 
     this.reset();
     this.takePadControl();
-    // this.pattern = [];
-    // this.playerInput = [];
-    // this.renderCount();
-
 
     let reinit = function() {
-      // console.log(this);
-      // this.currentPad = null;
+      this.currentPad = null;
       this.pattern = [];
       this.playerInput = [];
       this.renderCount();
       this.makePattern();
     };
 
-    // this.makePattern();
     setTimeout(reinit.bind(this), 500);
   },
 

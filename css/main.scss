@@ -227,6 +227,7 @@ body {
 
 .can-click {
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .blink {
