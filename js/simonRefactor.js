@@ -8,6 +8,7 @@ const note = new Sound(audioCtx);
 
 // Cache dom
 const dom = document;
+const body = dom.querySelector('body');
 const center = dom.querySelector('.center');
 const pads = dom.querySelectorAll('.pad');
 const displayCount = dom.querySelector('#led > h1');
@@ -20,22 +21,23 @@ const strictButton = dom.querySelector('#strict > .button');
 switchContainer.addEventListener('click', toggleOnOff);
 startButton.addEventListener('click', startGame);
 strictButton.addEventListener('click', toggleStrict);
-dom.addEventListener('mouseup', onPadClick);
+body.addEventListener('mouseup', onPadClick);
 pads.forEach(el => el.addEventListener('mousedown', onPadClick));
 
 // Game state
 const simonGame = {};
 
 simonGame.init = function() {
-  
+
   // Properites
   this.pattern = [];
   this.playerInput = [];
   this.currentPad = null;
-  
+
   // Timers
   this.playPatternInterval = null;
   this.endPatternTimeout = null;
+  this.addTimeout = null;
   this.afkTimeout = null;
 };
 
@@ -75,13 +77,12 @@ function padLightOff(pad) {
 
 function givePadControl() {
   pads.forEach(el => el.classList.add('can-click'));
-
-  // I want to try and replace this with css pointer-events
-  // events.bind.pads.call(this);
+  body.classList.add('can-click');
 }
 
 function takePadControl() {
-  this.pads.forEach(el => el.classList.remove('can-click'));
+  pads.forEach(el => el.classList.remove('can-click'));
+  body.classList.remove('can-click');
 }
 
 function renderCount() {
@@ -93,7 +94,7 @@ function renderCount() {
 }
 
 function failMessage() {
-  
+
   function endBlink() {
     displayCount.classList.remove('blink');
     renderCount();
@@ -108,14 +109,15 @@ function failMessage() {
 function killTimers() {
   clearInterval(simonGame.playPatternInterval);
   clearTimeout(simonGame.endPatternTimeout);
+  clearTimeout(simonGame.addTimeout);
   clearTimeout(simonGame.afkTimeout);
+  console.log('killTimers called');
 }
 
 function repeatIfAFK() {
 
   function playOnAFK() {
     pads.forEach(el => el.classList.remove('can-click'));
-    // this.events.unbind.pads.call(this);
     makePattern();
   }
 
@@ -131,7 +133,7 @@ function makePattern(appendToPattern) {
     let randomPad = Math.floor(Math.random() * Math.floor(4));
 
     simonGame.pattern.push(randomPad);
-    
+
     renderCount();
     playNote(randomPad);
     padLightOn(randomPad);
@@ -145,8 +147,8 @@ function makePattern(appendToPattern) {
   }
 
   function playPattern() {
-    let begin_ms = 500;
-    let end_ms = 300;
+    const begin_ms = 500;
+    const end_ms = 300;
     let i = 0;
 
     // Not sure why this is here, I'm sure I will find out
@@ -160,7 +162,7 @@ function makePattern(appendToPattern) {
         stopNote();
         padLightOff(simonGame.pattern[i]);
 
-        if (i === simonGame.pattern.length -1) {
+        if (i === simonGame.pattern.length - 1) {
           clearInterval(simonGame.playPatternInterval);
 
           if (appendToPattern === true) {
@@ -185,7 +187,7 @@ function makePattern(appendToPattern) {
 }
 
 function onPadClick(event) {
-  
+
   if (event.type === 'mousedown') {
     const re = /\d/;
     const padNum = Number(event.target.classList[1].match(re)) - 1;
@@ -194,16 +196,18 @@ function onPadClick(event) {
     padLightOn(padNum);
 
     // Correct pad choice
-    if (simonGame.playerInput[simonGame.playerInput.length -1] === simonGame.pattern[simonGame.playerInput.length - 1]) {
+    if (simonGame.playerInput[simonGame.playerInput.length - 1] === simonGame.pattern[simonGame.playerInput.length - 1]) {
       console.log('Good choice!');
       playNote(padNum);
-      
-      // Cancle repeat timetout and start it again on mousedown
+
+      // Cancle repeat timetout and start it again
       clearTimeout(simonGame.afkTimeout);
-    
+      // repeatIfAFK();
+
     } else {
       console.log('Bad choice >:(');
-      
+
+      // I need this to take control of the mouseup event on the document
       takePadControl();
       playNote(4);
       failMessage();
@@ -214,55 +218,106 @@ function onPadClick(event) {
     }
   }
 
-  if (event.type === 'mouseup') {
+  // This is so you can let go even off the pad itself
+  if (event.type === 'mouseup' && note.gainNode) {
     
-    if (simonGame.currentPad !== null) {
-      console.log('pad light ' + simonGame.currentPad  +  ' off');
+    if (note.gainNode.gain.value > 0.3) {
       padLightOff(simonGame.currentPad);
-    }
-    
-    if (note.gainNode) {
       stopNote();
+      repeatIfAFK();
     }
-    
-    if (simonGame.playerInput.length === simonGame.pattern.length) {
+
+    if (simonGame.playerInput.length === simonGame.pattern.length && simonGame.pattern.length > 0) {
       console.log('pattern complete!');
-      
+
       // Turn off pad clicks - Think I need to add take button control here
       takePadControl();
-      
+
       // Plays the pattern and true makes it add to end of the pattern
       setTimeout(makePattern, 500, true);
     }
-
-    repeatIfAFK();
   }
-
-
 }
 
 function toggleStrict() {}
 
-function toggleOnOff() {}
+function toggleOnOff() {
+
+  function addShine() {
+    center.classList.add('shine');
+  }
+
+  function removeShine() {
+    center.classList.remove('shine');
+  }
+
+  function flipOn() {
+    switchButton.style.float = 'right';
+    displayCount.style.color = 'red';
+    startButton.classList.add('can-click');
+    strictButton.classList.add('can-click');
+
+    givePadControl();
+    introSong();
+
+    // The 1200 is a guess, could be lowered, look in css to find out
+    setTimeout(addShine, 700);
+    setTimeout(removeShine, 1200);
+  }
+
+  function flipOff() {
+    switchButton.style.float = '';
+    displayCount.style.color = '';
+    displayCount.textContent = '--';
+    startButton.classList.remove('can-click');
+    strictButton.classList.remove('can-click');
+
+    killTimers();
+    takePadControl();    
+  }
+
+  if (switchButton.style.float === '') flipOn();
+  else flipOff();
+}
 
 function startGame() {
 
+
+  killTimers();
+  takePadControl();
+
+  simonGame.init();
+  // renderCount();
+
+
+  let freshStart = function() {
+    // simonGame.currentPad = null;
+    // simonGame.pattern = [];
+    // simonGame.playerInput = [];
+    // simonGame.init();
+    // renderCount();
+    makePattern();
+  };
+
+  setTimeout(freshStart, 500);
 }
 
 window.onload = function() {
-  if (this.document.readyState === 'complete') {
-    simonGame.init();
-  }
+  console.log('Game is ready and initialized!');
+  simonGame.init();
 };
 
-// I may be able to stop the game on tabchange and restart it on focus
-// to get rid of that bug where the game does not stop the first note 
-// played when tab is not focused.
+// Stop game on tab change or minimize and restart on focus
 document.onvisibilitychange = function() {
-  console.log(document.visibilityState);
   if (document.hidden) {
     console.log('Changed tabs at: ' + new Date().toLocaleTimeString());
+    stopNote();
+    takePadControl();
+    killTimers();
+    for (let i = 0; i < pads.length; i++) padLightOff(i);
+    
   } else {
     console.log('Tab selected at: ' + new Date().toLocaleTimeString());
+    makePattern();
   }
 };
