@@ -130,13 +130,13 @@ function failMessage() {
 function repeatIfAFK() {
 
   function playOnAFK() {
-    
+
     takePadControl();
     playNote(4);
     failMessage();
 
     setTimeout(stopNote, 1000);
-    
+
     if (simonGame.strictOn === true) {
       simonGame.pattern = [];
     }
@@ -187,7 +187,7 @@ function makePattern(appendToPattern) {
       simonGame.endPatternTimeout = setTimeout(() => {
         stopNote();
         padLightOff(simonGame.pattern[i]);
-        
+
         // If iterator is equal to length of game pattern
         if (i === simonGame.pattern.length - 1) {
           clearInterval(simonGame.playPatternInterval);
@@ -219,7 +219,7 @@ function onPadClick(event) {
     const re = /\d/;
     const padNum = Number(event.target.classList[1].match(re)) - 1;
     simonGame.currentPad = padNum;
-    
+
     // Cancle repeat timetout if a pad clicked and start it again on mouseup
     clearTimeout(simonGame.afkTimeout);
     padLightOn(padNum);
@@ -239,7 +239,7 @@ function onPadClick(event) {
 
       setTimeout(stopNote, 1000);
       setTimeout(padLightOff, 1000, padNum);
-      
+
       if (simonGame.strictOn === true) {
         simonGame.pattern = [];
       }
@@ -330,7 +330,7 @@ function startGame() {
   stopNote();
   padLightOffAll();
   killTimers();
-  takePadControl();  
+  takePadControl();
   simonGame.init();
   renderCount();
 
@@ -341,20 +341,23 @@ window.onload = function() {
   console.log('Game is ready and initialized!');
   // For game to work properly it must be initiated before switch or start
   // Or so I thought..., maybe that was true before some refactoring
-  // simonGame.init();
+  // If I just initialize it here it takes care of onvisibilitychange conditions
+  simonGame.init();
 };
 
 // Stop game on tab change or minimize and restart on focus
 document.onvisibilitychange = function() {
   if (document.hidden) {
     console.log('Changed tabs at: ' + new Date().toLocaleTimeString());
+
+    if (note.gainNode) stopNote();
+    
     killTimers();
-    stopNote();
     takePadControl();
     padLightOffAll();
 
   } else {
     console.log('Tab selected at: ' + new Date().toLocaleTimeString());
-    makePattern();
+    if (simonGame.pattern.length > 0) makePattern();
   }
 };
