@@ -1,8 +1,13 @@
 /* global Sound */
-// Simon game refactor
+
+// Refactor of simon.js
+// To Do:
+//   - Slow at start then speed up every so many moves
+//   - Change font stuff for text
+//   - Tune up css, border size of buttons, background color of strict button
 
 // Audio Setup
-const frequencies = [165, 220, 277, 330, 100];
+const frequencies = [164.81, 220, 277.18, 329.63, 98];
 const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
 const note = new Sound(audioCtx);
 
@@ -12,6 +17,7 @@ const body = dom.querySelector('body');
 const center = dom.querySelector('.center');
 const pads = dom.querySelectorAll('.pad');
 const displayCount = dom.querySelector('#led > h1');
+const strictLED = dom.querySelector('.strict-led');
 const switchContainer = dom.querySelector('.on-switch');
 const switchButton = dom.querySelector('.switch');
 const startButton = dom.querySelector('#start > .button');
@@ -27,6 +33,8 @@ pads.forEach(el => el.addEventListener('mousedown', onPadClick));
 // Game state
 const simonGame = {};
 
+simonGame.strictOn = false;
+
 simonGame.init = function() {
 
   // Properites
@@ -39,8 +47,8 @@ simonGame.init = function() {
   this.endPatternTimeout = null;
   this.addTimeout = null;
   this.afkTimeout = null;
+  this.startTimeout = null;
 };
-
 
 function playNote(padNum) {
   const now = audioCtx.currentTime;
@@ -75,14 +83,18 @@ function padLightOff(pad) {
   pads[pad].classList.remove(`p-${pad + 1}-active`);
 }
 
+function padLightOffAll() {
+  for (let i = 0; i < pads.length; i++) padLightOff(i);
+}
+
 function givePadControl() {
   pads.forEach(el => el.classList.add('can-click'));
-  body.classList.add('can-click');
+  body.classList.add('pe');
 }
 
 function takePadControl() {
   pads.forEach(el => el.classList.remove('can-click'));
-  body.classList.remove('can-click');
+  body.classList.remove('pe');
 }
 
 function renderCount() {
@@ -93,6 +105,15 @@ function renderCount() {
   }
 }
 
+function killTimers() {
+  clearInterval(simonGame.playPatternInterval);
+  clearTimeout(simonGame.endPatternTimeout);
+  clearTimeout(simonGame.addTimeout);
+  clearTimeout(simonGame.afkTimeout);
+  clearTimeout(simonGame.startTimeout);
+  console.log('killTimers called');
+}
+
 function failMessage() {
 
   function endBlink() {
@@ -100,34 +121,42 @@ function failMessage() {
     renderCount();
   }
 
-  console.log('You have chosen, poorly.');
+  console.log('Wrong choice or AFK.');
   displayCount.classList.add('blink');
   displayCount.textContent = '☠';
   setTimeout(endBlink, 2000);
 }
 
-function killTimers() {
-  clearInterval(simonGame.playPatternInterval);
-  clearTimeout(simonGame.endPatternTimeout);
-  clearTimeout(simonGame.addTimeout);
-  clearTimeout(simonGame.afkTimeout);
-  console.log('killTimers called');
-}
-
 function repeatIfAFK() {
 
   function playOnAFK() {
-    pads.forEach(el => el.classList.remove('can-click'));
-    makePattern();
+    
+    takePadControl();
+    playNote(4);
+    failMessage();
+
+    setTimeout(stopNote, 1000);
+    
+    if (simonGame.strictOn === true) {
+      simonGame.pattern = [];
+    }
+
+    setTimeout(makePattern, 2000);
   }
 
-  // should I change these names to gamePattern and playerPattern?
   if (simonGame.pattern.length !== simonGame.playerInput.length) {
     simonGame.afkTimeout = setTimeout(playOnAFK, 3000);
   }
 }
 
 function makePattern(appendToPattern) {
+  const gameSpeed = 0.5;
+  const noteStart = 1000 * gameSpeed;
+  const noteLength = 600 * gameSpeed;
+  const restLength = noteStart - noteLength;
+
+  // Reset player input array
+  simonGame.playerInput = [];
 
   function addRandom() {
     let randomPad = Math.floor(Math.random() * Math.floor(4));
@@ -138,21 +167,18 @@ function makePattern(appendToPattern) {
     playNote(randomPad);
     padLightOn(randomPad);
 
+    // Anonymous timeout here!
+    // I might have to add this to simonState so I can kill it
     setTimeout(() => {
       stopNote();
       padLightOff(randomPad);
       givePadControl();
       repeatIfAFK();
-    }, 300);
+    }, noteLength);
   }
 
   function playPattern() {
-    const begin_ms = 500;
-    const end_ms = 300;
     let i = 0;
-
-    // Not sure why this is here, I'm sure I will find out
-    simonGame.playerInput = [];
 
     simonGame.playPatternInterval = setInterval(() => {
       playNote(simonGame.pattern[i]);
@@ -161,12 +187,13 @@ function makePattern(appendToPattern) {
       simonGame.endPatternTimeout = setTimeout(() => {
         stopNote();
         padLightOff(simonGame.pattern[i]);
-
+        
+        // If iterator is equal to length of game pattern
         if (i === simonGame.pattern.length - 1) {
           clearInterval(simonGame.playPatternInterval);
 
           if (appendToPattern === true) {
-            simonGame.addTimeout = setTimeout(addRandom, 200);
+            simonGame.addTimeout = setTimeout(addRandom, restLength);
           } else {
             givePadControl();
             repeatIfAFK();
@@ -174,9 +201,9 @@ function makePattern(appendToPattern) {
         } else {
           i++;
         }
-      }, end_ms);
+      }, noteLength);
 
-    }, begin_ms);
+    }, noteStart);
   }
 
   if (simonGame.pattern.length === 0) {
@@ -192,45 +219,50 @@ function onPadClick(event) {
     const re = /\d/;
     const padNum = Number(event.target.classList[1].match(re)) - 1;
     simonGame.currentPad = padNum;
-    simonGame.playerInput.push(padNum);
+    
+    // Cancle repeat timetout if a pad clicked and start it again on mouseup
+    clearTimeout(simonGame.afkTimeout);
     padLightOn(padNum);
+    simonGame.playerInput.push(padNum);
 
-    // Correct pad choice
+    // Correct pad choice else incorrect
     if (simonGame.playerInput[simonGame.playerInput.length - 1] === simonGame.pattern[simonGame.playerInput.length - 1]) {
       console.log('Good choice!');
       playNote(padNum);
 
-      // Cancle repeat timetout and start it again
-      clearTimeout(simonGame.afkTimeout);
-      // repeatIfAFK();
-
     } else {
       console.log('Bad choice >:(');
 
-      // I need this to take control of the mouseup event on the document
       takePadControl();
       playNote(4);
       failMessage();
 
       setTimeout(stopNote, 1000);
       setTimeout(padLightOff, 1000, padNum);
-      return;
+      
+      if (simonGame.strictOn === true) {
+        simonGame.pattern = [];
+      }
+
+      setTimeout(makePattern, 2000);
     }
   }
 
-  // This is so you can let go even off the pad itself
-  if (event.type === 'mouseup' && note.gainNode) {
-    
+  // I check if currentPad is a number so this only passes if a pad has been pressed
+  // It then reset currentPad to null so this won't pass unless a pad is clicked first
+  if (event.type === 'mouseup' && Number.isInteger(simonGame.currentPad)) {
+
+    // This if statement may not be needed since the isInteger serves as such a strong gatekeeper
     if (note.gainNode.gain.value > 0.3) {
+      console.log('noteOff');
       padLightOff(simonGame.currentPad);
+      simonGame.currentPad = null;
       stopNote();
       repeatIfAFK();
     }
 
     if (simonGame.playerInput.length === simonGame.pattern.length && simonGame.pattern.length > 0) {
       console.log('pattern complete!');
-
-      // Turn off pad clicks - Think I need to add take button control here
       takePadControl();
 
       // Plays the pattern and true makes it add to end of the pattern
@@ -239,7 +271,16 @@ function onPadClick(event) {
   }
 }
 
-function toggleStrict() {}
+function toggleStrict() {
+  if (simonGame.strictOn === false) {
+    simonGame.strictOn = true;
+    strictLED.style.background = '#e50000';
+
+  } else {
+    simonGame.strictOn = false;
+    strictLED.style.background = '';
+  }
+}
 
 function toggleOnOff() {
 
@@ -257,7 +298,8 @@ function toggleOnOff() {
     startButton.classList.add('can-click');
     strictButton.classList.add('can-click');
 
-    givePadControl();
+    // If I wanted to allow pads to be played for fun I will need givePadControl
+    // givePadControl();
     introSong();
 
     // The 1200 is a guess, could be lowered, look in css to find out
@@ -271,9 +313,13 @@ function toggleOnOff() {
     displayCount.textContent = '--';
     startButton.classList.remove('can-click');
     strictButton.classList.remove('can-click');
+    simonGame.strictOn = false;
+    strictLED.style.background = '';
 
+    stopNote();
     killTimers();
-    takePadControl();    
+    takePadControl();
+    padLightOffAll();
   }
 
   if (switchButton.style.float === '') flipOn();
@@ -281,41 +327,32 @@ function toggleOnOff() {
 }
 
 function startGame() {
-
-
+  stopNote();
+  padLightOffAll();
   killTimers();
-  takePadControl();
-
+  takePadControl();  
   simonGame.init();
-  // renderCount();
+  renderCount();
 
-
-  let freshStart = function() {
-    // simonGame.currentPad = null;
-    // simonGame.pattern = [];
-    // simonGame.playerInput = [];
-    // simonGame.init();
-    // renderCount();
-    makePattern();
-  };
-
-  setTimeout(freshStart, 500);
+  simonGame.startTimeout = setTimeout(makePattern, 500);
 }
 
 window.onload = function() {
   console.log('Game is ready and initialized!');
-  simonGame.init();
+  // For game to work properly it must be initiated before switch or start
+  // Or so I thought..., maybe that was true before some refactoring
+  // simonGame.init();
 };
 
 // Stop game on tab change or minimize and restart on focus
 document.onvisibilitychange = function() {
   if (document.hidden) {
     console.log('Changed tabs at: ' + new Date().toLocaleTimeString());
+    killTimers();
     stopNote();
     takePadControl();
-    killTimers();
-    for (let i = 0; i < pads.length; i++) padLightOff(i);
-    
+    padLightOffAll();
+
   } else {
     console.log('Tab selected at: ' + new Date().toLocaleTimeString());
     makePattern();
