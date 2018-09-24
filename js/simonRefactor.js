@@ -5,6 +5,11 @@
 //   - Slow at start then speed up every so many moves
 //   - Change font stuff for text
 //   - Tune up css, border size of buttons, background color of strict button
+//   - I think I get and error when flipping switch off during pattern playback
+//   - add key bindings
+//   - bugged if you switch off while getting it wrong
+//   - When I hit start after afk error the first tone is cut short
+//   - I want to make the pad starting color darker I think
 
 // Audio Setup
 const frequencies = [164.81, 220, 277.18, 329.63, 98];
@@ -47,7 +52,9 @@ simonGame.init = function() {
   this.endPatternTimeout = null;
   this.addTimeout = null;
   this.afkTimeout = null;
+  this.wrongChoiceTimeout = null;
   this.startTimeout = null;
+  this.afkPatternTimeout = null;
 };
 
 function playNote(padNum) {
@@ -110,7 +117,9 @@ function killTimers() {
   clearTimeout(simonGame.endPatternTimeout);
   clearTimeout(simonGame.addTimeout);
   clearTimeout(simonGame.afkTimeout);
+  clearTimeout(simonGame.wrongChoiceTimeout);
   clearTimeout(simonGame.startTimeout);
+  clearTimeout(simonGame.afkPatternTimeout);
   console.log('killTimers called');
 }
 
@@ -140,8 +149,10 @@ function repeatIfAFK() {
     if (simonGame.strictOn === true) {
       simonGame.pattern = [];
     }
-
-    setTimeout(makePattern, 2000);
+    console.log('this is running');
+    // Try adding this to the list
+    // setTimeout(makePattern, 2000);
+    simonGame.afkPatternTimeout = setTimeout(makePattern, 2000);
   }
 
   if (simonGame.pattern.length !== simonGame.playerInput.length) {
@@ -206,11 +217,8 @@ function makePattern(appendToPattern) {
     }, noteStart);
   }
 
-  if (simonGame.pattern.length === 0) {
-    addRandom();
-  } else {
-    playPattern();
-  }
+  if (simonGame.pattern.length === 0) addRandom();
+  else playPattern();
 }
 
 function onPadClick(event) {
@@ -233,6 +241,7 @@ function onPadClick(event) {
     } else {
       console.log('Bad choice >:(');
 
+      simonGame.currentPad = null;
       takePadControl();
       playNote(4);
       failMessage();
@@ -244,7 +253,9 @@ function onPadClick(event) {
         simonGame.pattern = [];
       }
 
-      setTimeout(makePattern, 2000);
+      // This needs to be stopped if switched off or start probably
+      simonGame.wrongChoiceTimeout = setTimeout(makePattern, 2000);
+      // setTimeout(makePattern, 2000);
     }
   }
 
@@ -307,6 +318,7 @@ function toggleOnOff() {
     setTimeout(removeShine, 1200);
   }
 
+  // I think I need to add simonGame.init or a simonGame.pattern = 0 here
   function flipOff() {
     switchButton.style.float = '';
     displayCount.style.color = '';
@@ -315,6 +327,7 @@ function toggleOnOff() {
     strictButton.classList.remove('can-click');
     simonGame.strictOn = false;
     strictLED.style.background = '';
+    simonGame.pattern = [];
 
     stopNote();
     killTimers();
@@ -351,7 +364,7 @@ document.onvisibilitychange = function() {
     console.log('Changed tabs at: ' + new Date().toLocaleTimeString());
 
     if (note.gainNode) stopNote();
-    
+
     killTimers();
     takePadControl();
     padLightOffAll();
