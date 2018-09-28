@@ -1,3 +1,8 @@
+@font-face {
+  font-family: 'Squada One';
+  src: url('../fonts/SquadaOne-Regular.ttf');
+}
+
 html {
   background: no-repeat center center fixed url("../img/surface_spots_dark_texture_69707_1920x1080.jpg");
   -webkit-background-size: cover;
@@ -50,22 +55,26 @@ h3 {
 
 .p-1 {
   border-top-left-radius: 100%;
-  background: #05a052;
+  /* background: #05a052; */
+  background: #037a3f;
 }
 
 .p-2 {
   border-top-right-radius: 100%;
-  background: #c91b1c;
+  /* background: #c91b1c; */
+  background: #921313;
 }
 
 .p-3 {
   border-bottom-left-radius: 100%;
-  background: #d9bc18;
+  /* background: #d9bc18; */
+  background: #a58f12;
 }
 
 .p-4 {
   border-bottom-right-radius: 100%;
-  background: #017abf;
+  /* background: #017abf; */
+  background: #01588a;
 }
 
 .p-1-active {
@@ -169,6 +178,7 @@ h3 {
   width: 20px;
   background: grey;
   border-radius: 50%;
+  /* I want to increase border but I'll have to ajust some things */
   border: 2px solid darkslategrey;
   box-shadow: 0px 2px 3px 0px #3b3b3b;
 }

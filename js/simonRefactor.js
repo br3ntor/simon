@@ -1,15 +1,18 @@
 /* global Sound */
 
 // Refactor of simon.js
+
+//   Color Themes I like: Lichen, Abscent, MintChoc
+
 // To Do:
-//   - Slow at start then speed up every so many moves
-//   - Change font stuff for text
 //   - Tune up css, border size of buttons, background color of strict button
-//   - I think I get and error when flipping switch off during pattern playback
 //   - add key bindings
-//   - bugged if you switch off while getting it wrong
-//   - When I hit start after afk error the first tone is cut short
+//   - When I hit start after afk error the first tone is cut short, line 153
 //   - I want to make the pad starting color darker I think
+//   - Add mobile touch ability
+//   - Make it responsive if possible
+// Currently working on:
+//            * Adding speed as game pattern length increases.  *
 
 // Audio Setup
 const frequencies = [164.81, 220, 277.18, 329.63, 98];
@@ -46,8 +49,9 @@ simonGame.init = function() {
   this.pattern = [];
   this.playerInput = [];
   this.currentPad = null;
+  this.gameSpeed = null;
 
-  // Timers
+  // Timers - This is mostly to keep track of them
   this.playPatternInterval = null;
   this.endPatternTimeout = null;
   this.addTimeout = null;
@@ -144,6 +148,8 @@ function repeatIfAFK() {
     playNote(4);
     failMessage();
 
+    // After afk runs, if start is pressed, this still runs and stop the starting note early
+    // Will probably just define in gamestate and clearTimeouts
     setTimeout(stopNote, 1000);
 
     if (simonGame.strictOn === true) {
@@ -161,9 +167,16 @@ function repeatIfAFK() {
 }
 
 function makePattern(appendToPattern) {
-  const gameSpeed = 0.5;
-  const noteStart = 1000 * gameSpeed;
-  const noteLength = 600 * gameSpeed;
+  const speed = [0.6, 0.5, 0.4, 0.3, 0.2, 0.1];
+  const patternLength = simonGame.pattern.length;
+  
+  // Incrementally select from speed array every X tones.
+  if (patternLength % 4 === 0) {
+    simonGame.gameSpeed = patternLength / 4;
+  } 
+
+  const noteStart = 1000 * speed[simonGame.gameSpeed];
+  const noteLength = 600 * speed[simonGame.gameSpeed];
   const restLength = noteStart - noteLength;
 
   // Reset player input array
@@ -228,12 +241,12 @@ function onPadClick(event) {
     const padNum = Number(event.target.classList[1].match(re)) - 1;
     simonGame.currentPad = padNum;
 
-    // Cancle repeat timetout if a pad clicked and start it again on mouseup
+    // Cancle repeat timetout if a pad clicked, and start it again on mouseup
     clearTimeout(simonGame.afkTimeout);
     padLightOn(padNum);
     simonGame.playerInput.push(padNum);
 
-    // Correct pad choice else incorrect
+    // Correct pad choice, else incorrect
     if (simonGame.playerInput[simonGame.playerInput.length - 1] === simonGame.pattern[simonGame.playerInput.length - 1]) {
       console.log('Good choice!');
       playNote(padNum);
@@ -253,9 +266,7 @@ function onPadClick(event) {
         simonGame.pattern = [];
       }
 
-      // This needs to be stopped if switched off or start probably
       simonGame.wrongChoiceTimeout = setTimeout(makePattern, 2000);
-      // setTimeout(makePattern, 2000);
     }
   }
 
@@ -352,9 +363,8 @@ function startGame() {
 
 window.onload = function() {
   console.log('Game is ready and initialized!');
-  // For game to work properly it must be initiated before switch or start
-  // Or so I thought..., maybe that was true before some refactoring
-  // If I just initialize it here it takes care of onvisibilitychange conditions
+  
+  // If I initialize it here it prevents errors in onvisibilitychange when triggered before starting game
   simonGame.init();
 };
 
