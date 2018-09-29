@@ -167,13 +167,19 @@ function repeatIfAFK() {
 }
 
 function makePattern(appendToPattern) {
-  const speed = [0.6, 0.5, 0.4, 0.3, 0.2, 0.1];
+  // const speed = [0.6, 0.5, 0.4, 0.3, 0.2, 0.1];
+  // const speed = [0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35];
+  const speed = [0.65, 0.6, 0.55, 0.5, 0.45, 0.4];
   const patternLength = simonGame.pattern.length;
-  
+
   // Incrementally select from speed array every X tones.
-  if (patternLength % 4 === 0) {
-    simonGame.gameSpeed = patternLength / 4;
-  } 
+  // I might just consider incrementing gamespeed at the end of playPattern maybe
+  if (patternLength % 2 === 0 && patternLength <= 10) {
+    console.log(patternLength);
+    simonGame.gameSpeed = patternLength / 2;
+  } else if (patternLength > 10) {
+    simonGame.gameSpeed = 5;
+  }
 
   const noteStart = 1000 * speed[simonGame.gameSpeed];
   const noteLength = 600 * speed[simonGame.gameSpeed];
@@ -363,7 +369,7 @@ function startGame() {
 
 window.onload = function() {
   console.log('Game is ready and initialized!');
-  
+
   // If I initialize it here it prevents errors in onvisibilitychange when triggered before starting game
   simonGame.init();
 };
