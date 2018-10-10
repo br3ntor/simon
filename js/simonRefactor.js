@@ -1,18 +1,19 @@
 /* global Sound */
 
+// ===================================================================================
 // Refactor of simon.js
-
-//   Color Themes I like: Lichen, Abscent, MintChoc
-
+// -----------------------------------------------------------------------------------
 // To Do:
 //   - Tune up css, border size of buttons, background color of strict button
-//   - add key bindings
-//   - When I hit start after afk error the first tone is cut short, line 153
-//   - I want to make the pad starting color darker I think
+//   - Add key bindings
 //   - Add mobile touch ability
-//   - Make it responsive if possible
+//   - Make it responsive
+// 
 // Currently working on:
-//            * Adding speed as game pattern length increases.  *
+//   - To be continued...
+// 
+// ===================================================================================
+
 
 // Audio Setup
 const frequencies = [164.81, 220, 277.18, 329.63, 98];
@@ -51,7 +52,7 @@ simonGame.init = function() {
   this.currentPad = null;
   this.gameSpeed = null;
 
-  // Timers - This is mostly to keep track of them
+  // Timers - This is mostly to keep track of them, thats alota timers LOL
   this.playPatternInterval = null;
   this.endPatternTimeout = null;
   this.addTimeout = null;
@@ -59,6 +60,7 @@ simonGame.init = function() {
   this.wrongChoiceTimeout = null;
   this.startTimeout = null;
   this.afkPatternTimeout = null;
+  this.afkStopNote = null;
 };
 
 function playNote(padNum) {
@@ -124,6 +126,7 @@ function killTimers() {
   clearTimeout(simonGame.wrongChoiceTimeout);
   clearTimeout(simonGame.startTimeout);
   clearTimeout(simonGame.afkPatternTimeout);
+  clearTimeout(simonGame.afkStopNote);
   console.log('killTimers called');
 }
 
@@ -148,37 +151,38 @@ function repeatIfAFK() {
     playNote(4);
     failMessage();
 
-    // After afk runs, if start is pressed, this still runs and stop the starting note early
-    // Will probably just define in gamestate and clearTimeouts
-    setTimeout(stopNote, 1000);
+    // Length of note or how long before note stops.
+    simonGame.afkStopNote = setTimeout(stopNote, 1000);
 
     if (simonGame.strictOn === true) {
       simonGame.pattern = [];
     }
-    console.log('this is running');
-    // Try adding this to the list
-    // setTimeout(makePattern, 2000);
-    simonGame.afkPatternTimeout = setTimeout(makePattern, 2000);
+
+    // Time before pattern plays again or a new pattern starts if strict is true.
+    simonGame.afkPatternTimeout = setTimeout(makePattern, 2500);
   }
 
   if (simonGame.pattern.length !== simonGame.playerInput.length) {
-    simonGame.afkTimeout = setTimeout(playOnAFK, 3000);
+
+    // How long the player can be afk before afk function runs.
+    simonGame.afkTimeout = setTimeout(playOnAFK, 4000);
   }
 }
 
 function makePattern(appendToPattern) {
-  // const speed = [0.6, 0.5, 0.4, 0.3, 0.2, 0.1];
-  // const speed = [0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35];
-  const speed = [0.65, 0.6, 0.55, 0.5, 0.45, 0.4];
+  const countBase = 3; // Speed increases every x tones
+  const speed = [0.7, 0.675, 0.65, 0.6, 0.575, 0.55, 0.5, 0.475, 0.45, 0.4]; // Speed multipliers
   const patternLength = simonGame.pattern.length;
+  const finalIncrement = countBase * (speed.length - 1);
 
-  // Incrementally select from speed array every X tones.
-  // I might just consider incrementing gamespeed at the end of playPattern maybe
-  if (patternLength % 2 === 0 && patternLength <= 10) {
-    console.log(patternLength);
-    simonGame.gameSpeed = patternLength / 2;
-  } else if (patternLength > 10) {
-    simonGame.gameSpeed = 5;
+  // Incrementally select from speed array every so many tones defined in countBase.
+  // I might consider incrementing gamespeed at the end of playPattern maybe?
+  if (patternLength % countBase === 0 && patternLength <= finalIncrement) {
+    simonGame.gameSpeed = patternLength / countBase;
+    console.log('Speed increased to ' + simonGame.gameSpeed);
+
+  } else if (patternLength > finalIncrement) {
+    simonGame.gameSpeed = speed.length - 1;
   }
 
   const noteStart = 1000 * speed[simonGame.gameSpeed];
@@ -277,7 +281,7 @@ function onPadClick(event) {
   }
 
   // I check if currentPad is a number so this only passes if a pad has been pressed
-  // It then reset currentPad to null so this won't pass unless a pad is clicked first
+  // It then resets currentPad to null so this won't pass unless a pad is clicked first
   if (event.type === 'mouseup' && Number.isInteger(simonGame.currentPad)) {
 
     // This if statement may not be needed since the isInteger serves as such a strong gatekeeper
@@ -368,7 +372,7 @@ function startGame() {
 }
 
 window.onload = function() {
-  console.log('Game is ready and initialized!');
+  console.log('Game is ready to be turned on!');
 
   // If I initialize it here it prevents errors in onvisibilitychange when triggered before starting game
   simonGame.init();

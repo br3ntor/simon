@@ -40,7 +40,19 @@ h3 {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  /* Spinning animation stuff */
+  /* animation-name: spin;
+  animation-duration: 5000ms;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear; */
 }
+
+/* Animation keyframes */
+/* @keyframes spin {
+  from {transform: rotate(0deg);}
+  to  {transform: rotate(360deg);}
+} */
+
 
 .row {
   display: flex;
@@ -189,11 +201,11 @@ h3 {
 }
 
 #start .button {
-  background: red;
+  background: #ff0000;
 }
 
 #strict .button {
-  background: yellow;
+  background: #f5f500;
 }
 
 #bottom-controls {
