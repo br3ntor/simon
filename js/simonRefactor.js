@@ -61,6 +61,7 @@ simonGame.init = function() {
   this.startTimeout = null;
   this.afkPatternTimeout = null;
   this.afkStopNote = null;
+  this.patternCompleteTimeout = null;
 };
 
 function playNote(padNum) {
@@ -127,6 +128,7 @@ function killTimers() {
   clearTimeout(simonGame.startTimeout);
   clearTimeout(simonGame.afkPatternTimeout);
   clearTimeout(simonGame.afkStopNote);
+  clearTimeout(simonGame.patternCompleteTimeout);
   console.log('killTimers called');
 }
 
@@ -286,7 +288,6 @@ function onPadClick(event) {
 
     // This if statement may not be needed since the isInteger serves as such a strong gatekeeper
     if (note.gainNode.gain.value > 0.3) {
-      console.log('noteOff');
       padLightOff(simonGame.currentPad);
       simonGame.currentPad = null;
       stopNote();
@@ -298,7 +299,7 @@ function onPadClick(event) {
       takePadControl();
 
       // Plays the pattern and true makes it add to end of the pattern
-      setTimeout(makePattern, 500, true);
+      simonGame.patternCompleteTimeout = setTimeout(makePattern, 500, true);
     }
   }
 }
